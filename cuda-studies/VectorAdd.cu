@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 500000
+#define N 320000
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
