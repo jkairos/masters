@@ -7,9 +7,9 @@
 int main(void) {
 	cudaDeviceProp prop;
 	int count;
-	HANDLE_ERROR(cudaGetDeviceCount(&count));
+	cudaGetDeviceCount(&count);
 	for (int i = 0; i < count; i++) {
-		HANDLE_ERROR(cudaGetDeviceProperties(&prop, i));
+		cudaGetDeviceProperties(&prop, i);
 		printf(" --- General Information for device %d ---\n", i);
 		printf("Name: %s\n", prop.name);
 		printf("Compute capability: %d.%d\n", prop.major, prop.minor);
