@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 320000
+#define N 100000
+#define THREAD_PER_BLOCK 1
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -28,6 +29,26 @@ void vector_add(int *a, int *b, int *c){
 	}
 }
 
+void displayResults(int *a, int *b, int *c){
+	// display the results
+	for (int i = 0; i < N; i++) {
+		printf("%d + %d = %d\n", a[i], b[i], c[i]);
+	}
+}
+
+void sumVec(int *a, int *b, int *c, int start, int end){
+	if(end < start || start > end){
+		return;
+	}
+
+//	int idx= (start + (end-start))/2;
+	c[end]=a[end]+b[end];
+//	c[idx]=a[idx]+b[idx];
+	c[start]=a[start]+b[start];
+
+	sumVec(a,b,c,start+1,end-1);
+//	sumVec(a,b,c,idx+1,end-1);
+}
 
 void cpuImplementation(){
 	cudaEvent_t start, stop;
@@ -42,20 +63,18 @@ void cpuImplementation(){
 	for(int i=0; i< N; i++){
 		a[i]=-i;
 		b[i]=i*i;
+		c[i]=0;
 	}
 
 	cudaEventRecord(start);
-	vector_add(a,b,c);
+	//vector_add(a,b,c);
+	sumVec(a,b,c,0,N-1);
 	cudaEventRecord(stop);
-	// display the results
-//	for (int i = 0; i < N; i++) {
-//		printf("%d + %d = %d\n", a[i], b[i], c[i]);
-//	}
 
 	cudaEventSynchronize(stop);
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
-
+//	displayResults(a,b,c);
 	printf("Elapsed Time in CPU %fms\n", milliseconds);
 }
 
@@ -66,6 +85,9 @@ int main(void) {
 	int a[N], b[N], c[N];
 	int *dev_a, *dev_b, *dev_c;
 	cudaEvent_t start, stop;
+	int threadPerBlock=THREAD_PER_BLOCK;
+
+	cpuImplementation();
 
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
@@ -85,15 +107,12 @@ int main(void) {
 	CUDA_CHECK_RETURN(cudaMemcpy( dev_a, a, N * sizeof(int), cudaMemcpyHostToDevice ));
 	CUDA_CHECK_RETURN(cudaMemcpy( dev_b, b, N * sizeof(int), cudaMemcpyHostToDevice ));
 	cudaEventRecord(start);
-	add<<<N, 1>>>(dev_a, dev_b, dev_c);
+	add<<<N, threadPerBlock>>>(dev_a, dev_b, dev_c);
 	cudaEventRecord(stop);
 	// copy the array 'c' back from the GPU to the CPU
 	CUDA_CHECK_RETURN(cudaMemcpy( c, dev_c, N * sizeof(int), cudaMemcpyDeviceToHost ));
 
-	// display the results
-//	for (int i = 0; i < N; i++) {
-//		printf("%d + %d = %d\n", a[i], b[i], c[i]);
-//	}
+//	displayResults(a,b,c);
 
 	cudaEventSynchronize(stop);
 	float milliseconds = 0;
@@ -106,7 +125,6 @@ int main(void) {
 	cudaFree(dev_b);
 	cudaFree(dev_c);
 
-	cpuImplementation();
 
 	return 0;
 }

@@ -4,7 +4,7 @@
 /**
  * Host function that prepares data array and passes it to the CUDA kernel.
  */
-int main(void) {
+int main1(void) {
 	cudaDeviceProp prop;
 	int count;
 	cudaGetDeviceCount(&count);
